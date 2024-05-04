@@ -161,6 +161,7 @@ var graphioGremlin = (function(){
 			 !isNaN(parseInt(value, 10));
 	}
 	function click_query(d) {
+    var communication_method = $('#communication_method').val();
 		var edge_filter = $('#edge_filter').val();
 		// Gremlin query
 		//var gremlin_query = traversal_source + ".V("+d.id+").bothE().bothV().path()"
@@ -170,6 +171,13 @@ var graphioGremlin = (function(){
 			id = '"'+id+'"';
 		}
 		var gremlin_query_nodes = 'nodes = ' + traversal_source + '.V('+id+').as("node").both('+(edge_filter?'"'+edge_filter+'"':'')+').as("node").select(all,"node").inject(' + traversal_source + '.V('+id+')).unfold()'
+    // https://github.com/bricaud/graphexp/issues/102
+    // https://github.com/bricaud/graphexp/blob/9ab415597a86edc573763cdd71faf68ca0826445/scripts/graphioGremlin.js#L184
+    // https://github.com/bricaud/graphexp/commit/62a4839f45915ce416b2d3d435eb5b6c9f8caa40
+    if (communication_method == "GraphSON3_4") {
+        // Version 3.4 with patch for version 3.5 and above with traversal_source replaced by '__'
+        gremlin_query_nodes = 'nodes = ' + traversal_source + '.V('+id+').as("node").both('+(edge_filter?'"'+edge_filter+'"':'')+').as("node").select(all,"node").inject(' + '__' + '.V('+id+')).unfold()'
+    }
 		var gremlin_query_edges = "edges = " + traversal_source + ".V("+id+").bothE("+(edge_filter?"'"+edge_filter+"'":"")+")";
 		var gremlin_query = gremlin_query_nodes+'\n'+gremlin_query_edges+'\n'+'[nodes.toList(),edges.toList()]'
 		// while busy, show we're doing something in the messageArea.
@@ -362,7 +370,7 @@ var graphioGremlin = (function(){
 			return // TODO handle answer to check if data has been written
 		}
 		//console.log(COMMUNICATION_METHOD)
-		if (COMMUNICATION_METHOD == 'GraphSON3'){
+		if (COMMUNICATION_METHOD == 'GraphSON3' || COMMUNICATION_METHOD == 'GraphSON3_4'){
 			//console.log(data)
 			data = graphson3to1(data);
 			var arrange_data = arrange_datav3;
